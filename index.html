@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generative AI PDF Q&A</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #e0f7fa, #ffffff);
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 100vh;
+    padding: 30px 10px;
+}
+
+h1 { color: #0c4a6e; margin-bottom: 20px; text-align: center; }
+h2 { color: #155e75; margin-bottom: 10px; }
+
+.card {
+    padding: 25px 30px;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 1000px; /* 🔥 increased width */
+    margin-bottom: 20px;
+    color: #333;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+}
+
+#uploadCard { background: linear-gradient(135deg, #a5f3fc, #ffffff); }
+#questionCard { background: linear-gradient(135deg, #bae6fd, #ffffff); }
+
+input[type="text"], input[type="file"] {
+    width: 100%;
+    padding: 12px 15px;
+    margin: 10px 0;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    font-size: 16px;
+}
+
+button {
+    padding: 12px 25px;
+    background: #38bdf8;
+    color: #fff;
+    font-size: 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    align-self: flex-start;
+}
+
+button:hover { background: #0ea5e9; }
+
+/* ✅ ANSWER BOX FIXED */
+#answerContainer {
+    width: 95%;
+    max-width: 1100px;
+    margin: 20px auto 40px auto;
+    padding: 20px;
+
+    background: #ffffff;      /* ✅ White background */
+    color: #000000;           /* ✅ Black text */
+
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+    min-height: 120px;
+    font-size: 16px;
+
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-x: hidden;
+}
+
+.spinner {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 3px solid rgba(0,0,0,0.2);
+    border-top-color: #0284c7;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+</style>
+</head>
+
+<body>
+
+<h1>Generative AI PDF Q&A</h1>
+
+<div class="card" id="uploadCard">
+    <h2>Upload PDF</h2>
+    <input type="file" id="pdfUpload" accept="application/pdf">
+    <button onclick="uploadPDF()">Upload PDF</button>
+</div>
+
+<div class="card" id="questionCard">
+    <h2>Ask a Question / Get Summary</h2>
+    <input type="text" id="questionInput" placeholder="Enter your question or type 'summary'">
+    <button onclick="askQuestion()">Submit</button>
+</div>
+
+<!-- Answer / Summary Box -->
+<div id="answerContainer">Waiting for input...</div>
+
+<script>
+let uploadedFileName = "";
+
+function uploadPDF() {
+    const fileInput = document.getElementById("pdfUpload");
+    const pdfFile = fileInput.files[0];
+    if (!pdfFile) { alert("Please select a PDF file first."); return; }
+
+    const formData = new FormData();
+    formData.append("file", pdfFile);
+
+    const answerBox = document.getElementById("answerContainer");
+    answerBox.innerHTML = '⚙ Processing PDF... please wait <span class="spinner"></span>';
+
+    fetch("upload.php", { method: "POST", body: formData })
+    .then(res => res.json())
+    .then(data => {
+        if (data.status === "success") {
+            uploadedFileName = data.filename;
+            answerBox.innerText = "✅ PDF uploaded: " + uploadedFileName;
+        } else {
+            answerBox.innerText = "❌ Upload failed: " + data.message;
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        answerBox.innerText = "❌ Upload failed. Check console.";
+    });
+}
+
+function askQuestion() {
+    const question = document.getElementById("questionInput").value.trim();
+    if (!question) { alert("Please enter a question or type 'summary'."); return; }
+    if (!uploadedFileName) { alert("Please upload a PDF first."); return; }
+
+    const answerBox = document.getElementById("answerContainer");
+    answerBox.innerHTML = '⚙ Processing PDF... please wait <span class="spinner"></span>';
+
+    fetch("ask.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question, filename: uploadedFileName })
+    })
+    .then(res => res.json())
+    .then(data => { 
+        answerBox.innerText = data.answer;
+    })
+    .catch(err => {
+        console.error(err);
+        answerBox.innerText = "❌ Error retrieving answer.";
+    });
+}
+</script>
+
+</body>
+</html>

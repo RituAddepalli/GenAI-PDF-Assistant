@@ -1,0 +1,16 @@
+# Ignore virtual environment
+venv/
+venv-genai+qa/
+
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+*.pyo
+
+# VS Code settings
+.vscode/
+
+# System files
+.DS_Store
+Thumbs.db
+uploads
